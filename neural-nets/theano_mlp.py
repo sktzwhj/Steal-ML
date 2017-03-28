@@ -11,6 +11,7 @@ import utils
 from sklearn.metrics import accuracy_score
 import pandas as pd
 import glob
+from nltk.cluster import KMeansClusterer, euclidean_distance
 
 
 class HiddenLayer(object):
@@ -396,6 +397,43 @@ def build_model(nn_hdim, X, y, epsilon=1e-5, reg_lambda=0.0001, num_passes=1000,
         last_cost = curr_cost
 
         gnorm = grad_norm()
+
+        all_weights = []
+
+        for ws in classifier.params[0].get_value().tolist():
+
+            for w in ws:
+
+                #print w
+
+                all_weights.append(w)
+
+        for ws in classifier.params[2].get_value().tolist():
+
+            for w in ws:
+
+                #print w
+
+                all_weights.append(w)
+
+
+        '''
+        for weight_group in classifier.params[0].get_value():
+
+            all_weights += weight_group
+
+        for weight_group in classifier.params[2].get_value():
+
+            all_weights += weight_group
+        '''
+        print len(all_weights)
+
+        clusterer = KMeansClusterer(5, euclidean_distance)
+
+        clusters = clusterer.cluster(all_weights, True, trace=True)
+
+        print clusterer.means()
+
 
         if gnorm < 1e-5:
             break

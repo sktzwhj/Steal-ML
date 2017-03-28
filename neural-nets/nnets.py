@@ -179,7 +179,7 @@ def main():
     force_reg = args.force_reg
     seed = args.seed
     '''
-    dataset = "digits_all"
+    dataset = "adult"
     action ="extract"
     hidden_nodes = 20
     budget = 0.1
@@ -191,16 +191,24 @@ def main():
     batch_size = 49
     force_reg = False
     seed = 0
-    budget=1
+    budget=2
     np.random.seed(0)
     print 'parameter done'
     X_train, y_train, X_test, y_test, scaler = utils.prepare_data(dataset)
-    print 'X_train length 1 is %d' % len(X_train)
+    print 'Training data shape X is {} x {}'.format(X_train.shape[0], X_train.shape[1])
+
+    print 'Training data shape Y is {}'.format(y_train.shape[0])
+
+
+
+
     if force_reg:
         dataset += "_reg"
 
     ext = LocalPerceptronExtractor(dataset, hidden_nodes, X_train, y_train,
                                    rounding=rounding, force_reg=force_reg)
+
+    print 'The number of class is %d'%len(ext.get_classes())
 
     num_unknowns = hidden_nodes * (X_train.shape[1] + 1) + \
                    len(ext.get_classes()) * (hidden_nodes + 1)
