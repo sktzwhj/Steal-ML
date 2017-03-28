@@ -276,6 +276,8 @@ def build_model(nn_hdim, X, y, epsilon=1e-5, reg_lambda=0.0001, num_passes=1000,
                 eps_factor=0.99, epoch=1000, print_loss=False, print_epoch=1000,
                 batch_size=None, force_reg=False):
 
+    print 'batch size when entering into build model is %d' % batch_size
+    print 'length of X while entering build_model is %d' % len(X)
     n_in = X.shape[1]
     n_out = y.shape[1]
 
@@ -285,9 +287,14 @@ def build_model(nn_hdim, X, y, epsilon=1e-5, reg_lambda=0.0001, num_passes=1000,
                            borrow=True)
 
     if batch_size is None or batch_size > len(X):
+        print 'length of X is %d'%len(X)
         batch_size = len(X)
 
+    print 'batch size checkpoint 1 is %d' % batch_size
+
     batch_size = max(batch_size, len(X)/1000)
+
+    print 'batch size checkpoint 2 is %d'%batch_size
 
     # compute number of minibatches
     n_batches = data_x.get_value(borrow=True).shape[0] / batch_size
@@ -440,6 +447,8 @@ class PerceptronExtractor(object):
                 num_passes=1000, reg_lambda=1e-8, eps_factor=0.99, epoch=100,
                 print_loss=True, print_epoch=10, batch_size=20, random_seed=0):
 
+        print 'batch size when entering extract is %d'%batch_size
+
         numpy.random.seed(random_seed)
 
         assert not (adaptive_oracle and steps)
@@ -451,8 +460,14 @@ class PerceptronExtractor(object):
 
         if not adaptive_oracle:
             X_ext = utils.gen_query_set(X_train.shape[1], step)
+
+            print 'the length of x_ext is %d'%len(X_ext)
+
         else:
+
             X_ext = utils.line_search_oracle(X_train.shape[1], step, self.query)
+
+            print 'adaptive_oracle the length of x_ext is %d' % len(X_ext)
 
         idx = 0
         while budget > 0:
@@ -464,6 +479,7 @@ class PerceptronExtractor(object):
             if not baseline:
                 y_ext_p = self.query_probas(X_ext)
             else:
+                #this part is intersting as it makes the output of class y as [0,0,...,0,y,0] where only the yth output is 1.
                 num_classes = len(self.get_classes())
                 y_ext_p = numpy.zeros((len(y_ext), num_classes))
                 y_ext_p[numpy.arange(len(y_ext)), y_ext] = 1
@@ -471,6 +487,8 @@ class PerceptronExtractor(object):
             # Loss with correct parameters:
             print self.calculate_loss(X_ext, y_ext_p, reg_lambda)
             print >> sys.stderr, self.calculate_loss(X_ext, y_ext_p, reg_lambda)
+
+            #build model will call model_train so that the model saved will be the corresponding model.
 
             model = build_model(self.hidden_nodes, X_ext, y_ext_p,
                                 epsilon=epsilon, num_passes=num_passes,

@@ -58,6 +58,7 @@ class LocalPerceptronExtractor(PerceptronExtractor):
 
     def __init__(self, dataset, hidden_nodes, X_train, y_train, rounding,
                  force_reg=False):
+        print 'LocalPerceptronExtractor initlized'
         self.X_train = X_train
         self.y_train = y_train
         self.classes = pd.Series(y_train).unique()
@@ -141,6 +142,8 @@ class LocalPerceptronExtractor(PerceptronExtractor):
 
 
 def main():
+    '''
+
     parser = argparse.ArgumentParser()
     parser.add_argument('data', type=str, help='a dataset')
     parser.add_argument('hidden_nodes', type=int, help='number of hidden nodes')
@@ -175,11 +178,24 @@ def main():
     batch_size = args.batch_size
     force_reg = args.force_reg
     seed = args.seed
-
+    '''
+    dataset = "digits_all"
+    action ="extract"
+    hidden_nodes = 20
+    budget = 0.1
+    num_passes = 1000
+    rounding = None
+    steps = []
+    adaptive_oracle = True
+    epsilon = 0.01
+    batch_size = 49
+    force_reg = False
+    seed = 0
+    budget=1
     np.random.seed(0)
-
+    print 'parameter done'
     X_train, y_train, X_test, y_test, scaler = utils.prepare_data(dataset)
-
+    print 'X_train length 1 is %d' % len(X_train)
     if force_reg:
         dataset += "_reg"
 
@@ -189,6 +205,8 @@ def main():
     num_unknowns = hidden_nodes * (X_train.shape[1] + 1) + \
                    len(ext.get_classes()) * (hidden_nodes + 1)
 
+    budget = budget*num_unknowns
+    print 'num_unknowns is ',num_unknowns
     try:
         budget = int(budget)
     except ValueError:
@@ -206,6 +224,7 @@ def main():
     if action == "train":
         ext.train(X_test, y_test, num_passes=num_passes)
     elif action == "extract":
+        print 'X_train length is %d'%len(X_train)
         ext.extract(X_train, y_train, budget, steps=steps,
                     adaptive_oracle=adaptive_oracle, num_passes=num_passes,
                     epsilon=epsilon, batch_size=batch_size, random_seed=seed)

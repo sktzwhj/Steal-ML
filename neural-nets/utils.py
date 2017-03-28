@@ -178,7 +178,10 @@ def prepare_digits():
 
 
 def prepare_digits_all():
-    data = sklearn.datasets.fetch_mldata('MNIST original', data_home='../data')
+    print 'fetching MNIST data'
+
+    data = sklearn.datasets.fetch_mldata('MNIST original', data_home='/home/wuhuijun/data')
+    print 'data get'
     X = data.data.astype(float)
     y = np.asarray(data.target, dtype=int)
     return X, y
