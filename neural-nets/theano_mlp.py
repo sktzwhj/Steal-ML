@@ -391,11 +391,14 @@ def build_model(nn_hdim, X, y, epsilon=1e-5, reg_lambda=0.0001, num_passes=1000,
         i += 1
         for minibatch_index in xrange(n_batches):
             train_model(minibatch_index, epsilon, g)
+            print 'batch %d'%i
 
         l_prev = l
         l = 0.5*(1 + numpy.sqrt(1 + 4 * l**2))
         g = (1 - l_prev)/l
 
+
+        print 'the length of data used to calculate loss is %d'%len(y)
         curr_cost = calculate_loss(classifier, X, y, reg_lambda)
 
         if curr_cost > last_cost:
@@ -407,49 +410,13 @@ def build_model(nn_hdim, X, y, epsilon=1e-5, reg_lambda=0.0001, num_passes=1000,
 
         gnorm = grad_norm()
 
-        all_weights = []
-
-        for ws in classifier.params[0].get_value().tolist():
-
-            for w in ws:
-
-                #print w
-
-                all_weights.append(w)
-
-        for ws in classifier.params[2].get_value().tolist():
-
-            for w in ws:
-
-                #print w
-
-                all_weights.append(w)
-
-        print len(all_weights)
-
-        clusterer = KMeansClusterer(32, euclidean_distance)
-
-        clusters = clusterer.cluster(all_weights, True, trace=True)
-
-        cur_means = sorted(clusterer.means())
-
-
-
-        cluster_path.append(clusters)
-
-        #means_distance = distance.euclidean(cur_means, last_means)
-
-        #print 'means distance is %f'%means_distance
-
-        last_means = cur_means
-
-
         if gnorm < 1e-5:
             break
 
-        #cost_list.append(curr_cost)
+        #weight_dump(classifier)
 
-        #means_list.append(means_distance)
+        weight_compression(classifier)
+
 
         if i % print_epoch == 0:
             print 'Epoch %i: Cost: %f' % (i, curr_cost)
@@ -464,31 +431,138 @@ def build_model(nn_hdim, X, y, epsilon=1e-5, reg_lambda=0.0001, num_passes=1000,
                           os.path.split(__file__)[1] +
                           ' ran for %.2fm' % ((end_time - start_time) / 60.))
 
+    return classifier
+
+
+#compress the weight by quantization
+def weight_compression(classifier):
+
+    print 'compressing weights...'
+
+    code_book_mean = []
+
+    all_weights = []
+
+    weight_index = []
+
+    list = classifier.params[0].get_value().tolist()
+
+    outer_index = 0
+
+    inner_index = 0
+
+    param0_list = classifier.params[0].get_value().tolist()
+
+    for ws in param0_list:
+
+        for w in ws:
+
+            all_weights.append(w)
+
+            weight_index.append((0, outer_index, inner_index))
+
+            inner_index += 1
+
+        outer_index += 1
+
+    param2_list = classifier.params[2].get_value().tolist()
+
+    outer_index = 0
+
+    inner_index = 0
+
+    for ws in param2_list:
+
+        for w in ws:
+
+            all_weights.append(w)
+
+            weight_index.append((2, outer_index, inner_index))
+
+            inner_index += 1
+
+        outer_index += 1
+
+    clusterer = KMeansClusterer(32, euclidean_distance)
+
+    clusters = clusterer.cluster(all_weights, True, trace=True)
+
+    code_book_mean = clusterer.means()
+
+    cur_param_group = 0
+
+    cur_outer_index = 0
+
+    cur_line_list = []
+
+    for i in range(len(clusters)):
+
+        print '[param_group][outer_index] is (%d,%d)'%(cur_param_group, cur_outer_index)
+
+        if weight_index[i][0] == cur_param_group:
+
+            if weight_index[i][1] == cur_outer_index:
+
+                cur_line_list.append(code_book_mean[clusters[i]])
+
+            else:
+
+                print 'the line to set is ', numpy.asarray(cur_line_list, dtype=theano.config.floatX)
+
+                classifier.params[cur_param_group].set_value(numpy.array(cur_line_list))
+
+                cur_line_list = []
+
+                cur_outer_index = weight_index[i][1]
+
+
+        else:
+
+            cur_param_group = weight_index[i][0]
+
+
+
+
+
+
+
+
+
+
+
+
+
+def weight_dump(classifier):
+
+    all_weights = []
+
+    for ws in classifier.params[0].get_value().tolist():
+
+        for w in ws:
+
+            all_weights.append(w)
+
+    for ws in classifier.params[2].get_value().tolist():
+
+        for w in ws:
+
+            all_weights.append(w)
+
+    print len(all_weights)
+
+    clusterer = KMeansClusterer(32, euclidean_distance)
+
+    clusters = clusterer.cluster(all_weights, True, trace=True)
+
+    cluster_path.append(clusters)
+
     cluster_path_str = cPickle.dumps(cluster_path)
-
-    '''
-    cost_list_str = cPickle.dumps(cost_list)
-
-    means_distance_list_str = cPickle.dumps(means_list)
-
-
-
-
-    with open('cost_list', 'w+') as f:
-
-        f.write(cost_list_str)
-
-    with open('mean_list', 'w+') as f:
-
-        f.write(means_distance_list_str)
-    '''
-
 
     with open('cluster_path', 'w+') as f:
 
         f.write(cluster_path_str)
 
-    return classifier
+
 
 
 class PerceptronExtractor(object):
