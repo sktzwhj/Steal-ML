@@ -487,17 +487,27 @@ def weight_compression(classifier):
 
     clusters = clusterer.cluster(all_weights, True, trace=True)
 
+    print 'length of all weight is %d'%len(all_weights)
+
+    print 'number of clusters is %d'%len(clusters)
+
+    print 'number of weight index is %d'%len(weight_index)
+
     code_book_mean = clusterer.means()
+
+    print 'length of cook book is %d'%len(code_book_mean)
 
     cur_param_group = 0
 
     cur_outer_index = 0
 
+    to_write_list = []
+
     cur_line_list = []
 
     for i in range(len(clusters)):
 
-        print '[param_group][outer_index] is (%d,%d)'%(cur_param_group, cur_outer_index)
+
 
         if weight_index[i][0] == cur_param_group:
 
@@ -507,9 +517,8 @@ def weight_compression(classifier):
 
             else:
 
-                print 'the line to set is ', numpy.asarray(cur_line_list, dtype=theano.config.floatX)
 
-                classifier.params[cur_param_group].set_value(numpy.array(cur_line_list))
+                to_write_list.append(cur_line_list)
 
                 cur_line_list = []
 
@@ -518,18 +527,23 @@ def weight_compression(classifier):
 
         else:
 
+            print 'should have shape', classifier.params[0].get_value().shape
+
+            right_shape = classifier.params[0].get_value().shape
+
+            print cur_param_group
+
+            print len(to_write_list)
+
+            print classifier.params[0].get_value()
+
+            print to_write_list
+
+            #classifier.params[cur_param_group].set_value(numpy.asarray(to_write_list, dtype=theano.config.floatX))
+
             cur_param_group = weight_index[i][0]
 
-
-
-
-
-
-
-
-
-
-
+            to_write_list = []
 
 
 def weight_dump(classifier):
