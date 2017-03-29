@@ -3,7 +3,6 @@ import pandas as pd
 import numpy as np
 import argparse
 
-
 def make_plots_lr(filenames):
     datas = {}
     for idx, filename in enumerate(filenames):

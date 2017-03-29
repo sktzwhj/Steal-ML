@@ -391,14 +391,14 @@ def build_model(nn_hdim, X, y, epsilon=1e-5, reg_lambda=0.0001, num_passes=1000,
         i += 1
         for minibatch_index in xrange(n_batches):
             train_model(minibatch_index, epsilon, g)
-            print 'batch %d'%i
+
 
         l_prev = l
         l = 0.5*(1 + numpy.sqrt(1 + 4 * l**2))
         g = (1 - l_prev)/l
 
 
-        print 'the length of data used to calculate loss is %d'%len(y)
+        #print 'the length of data used to calculate loss is %d'%len(y)
         curr_cost = calculate_loss(classifier, X, y, reg_lambda)
 
         if curr_cost > last_cost:
@@ -416,6 +416,8 @@ def build_model(nn_hdim, X, y, epsilon=1e-5, reg_lambda=0.0001, num_passes=1000,
         #weight_dump(classifier)
 
         weight_compression(classifier)
+
+        print 'cur loss is ', curr_cost
 
 
         if i % print_epoch == 0:
@@ -487,15 +489,15 @@ def weight_compression(classifier):
 
     clusters = clusterer.cluster(all_weights, True, trace=True)
 
-    print 'length of all weight is %d'%len(all_weights)
+    #print 'length of all weight is %d'%len(all_weights)
 
-    print 'number of clusters is %d'%len(clusters)
+    #print 'number of clusters is %d'%len(clusters)
 
-    print 'number of weight index is %d'%len(weight_index)
+    #print 'number of weight index is %d'%len(weight_index)
 
     code_book_mean = clusterer.means()
 
-    print 'length of cook book is %d'%len(code_book_mean)
+    #print 'length of cook book is %d'%len(code_book_mean)
 
     cur_param_group = 0
 
@@ -507,6 +509,10 @@ def weight_compression(classifier):
 
     for i in range(len(clusters)):
 
+        #print (cur_param_group, cur_outer_index)
+
+
+
 
 
         if weight_index[i][0] == cur_param_group:
@@ -517,29 +523,31 @@ def weight_compression(classifier):
 
             else:
 
+                #print 'len of cur_line__list is %d'%len(cur_line_list)
 
+                #print cur_line_list
                 to_write_list.append(cur_line_list)
 
                 cur_line_list = []
+
+                cur_line_list.append(code_book_mean[clusters[i]])
 
                 cur_outer_index = weight_index[i][1]
 
 
         else:
 
-            print 'should have shape', classifier.params[0].get_value().shape
+            to_write_list.append(cur_line_list)
+
+            #print 'should have shape', classifier.params[0].get_value().shape
 
             right_shape = classifier.params[0].get_value().shape
 
-            print cur_param_group
+            #print cur_param_group
 
-            print len(to_write_list)
+            #print len(to_write_list)
 
-            print classifier.params[0].get_value()
-
-            print to_write_list
-
-            #classifier.params[cur_param_group].set_value(numpy.asarray(to_write_list, dtype=theano.config.floatX))
+            classifier.params[cur_param_group].set_value(numpy.asarray(to_write_list, dtype=theano.config.floatX))
 
             cur_param_group = weight_index[i][0]
 
