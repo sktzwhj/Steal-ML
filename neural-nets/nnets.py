@@ -180,10 +180,10 @@ def main():
     seed = args.seed
     '''
     dataset = "adult"
-    action ="extract"
+    action ="train"
     hidden_nodes = 20
     budget = 0.1
-    num_passes = 1000
+    num_passes = 500
     rounding = None
     steps = []
     adaptive_oracle = True

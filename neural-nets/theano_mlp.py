@@ -12,6 +12,7 @@ from sklearn.metrics import accuracy_score
 import pandas as pd
 import glob
 from nltk.cluster import KMeansClusterer, euclidean_distance
+from scipy.spatial import distance
 
 
 class HiddenLayer(object):
@@ -378,6 +379,14 @@ def build_model(nn_hdim, X, y, epsilon=1e-5, reg_lambda=0.0001, num_passes=1000,
     l = 1
     g = 0
 
+    last_means = 0
+
+    cost_list = []
+
+    means_list = []
+
+    cluster_path = []
+
     while i < num_passes:
         i += 1
         for minibatch_index in xrange(n_batches):
@@ -416,27 +425,31 @@ def build_model(nn_hdim, X, y, epsilon=1e-5, reg_lambda=0.0001, num_passes=1000,
 
                 all_weights.append(w)
 
-
-        '''
-        for weight_group in classifier.params[0].get_value():
-
-            all_weights += weight_group
-
-        for weight_group in classifier.params[2].get_value():
-
-            all_weights += weight_group
-        '''
         print len(all_weights)
 
-        clusterer = KMeansClusterer(5, euclidean_distance)
+        clusterer = KMeansClusterer(32, euclidean_distance)
 
         clusters = clusterer.cluster(all_weights, True, trace=True)
 
-        print clusterer.means()
+        cur_means = sorted(clusterer.means())
+
+
+
+        cluster_path.append(clusters)
+
+        #means_distance = distance.euclidean(cur_means, last_means)
+
+        #print 'means distance is %f'%means_distance
+
+        last_means = cur_means
 
 
         if gnorm < 1e-5:
             break
+
+        #cost_list.append(curr_cost)
+
+        #means_list.append(means_distance)
 
         if i % print_epoch == 0:
             print 'Epoch %i: Cost: %f' % (i, curr_cost)
@@ -450,6 +463,30 @@ def build_model(nn_hdim, X, y, epsilon=1e-5, reg_lambda=0.0001, num_passes=1000,
     print >> sys.stderr, ('The code for file ' +
                           os.path.split(__file__)[1] +
                           ' ran for %.2fm' % ((end_time - start_time) / 60.))
+
+    cluster_path_str = cPickle.dumps(cluster_path)
+
+    '''
+    cost_list_str = cPickle.dumps(cost_list)
+
+    means_distance_list_str = cPickle.dumps(means_list)
+
+
+
+
+    with open('cost_list', 'w+') as f:
+
+        f.write(cost_list_str)
+
+    with open('mean_list', 'w+') as f:
+
+        f.write(means_distance_list_str)
+    '''
+
+
+    with open('cluster_path', 'w+') as f:
+
+        f.write(cluster_path_str)
 
     return classifier
 
